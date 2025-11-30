@@ -74,6 +74,49 @@ function classifyCategory(noteRaw) {
   return "General";
 }
 
+// ---------- "AI" FRAUD / RISK SCORING ----------
+function scoreRisk(amount, noteRaw, walletAddress) {
+  let score = 0;
+  const flags = [];
+
+  const note = (noteRaw || "").toLowerCase();
+
+  // large amount thresholds (you can tweak)
+  if (amount >= 200000) {
+    score += 50;
+    flags.push("Very large donation amount");
+  } else if (amount >= 50000) {
+    score += 25;
+    flags.push("Large donation compared to normal");
+  }
+
+  // suspicious keywords
+  const susWords = ["refund", "chargeback", "scam", "fraud", "hack", "stolen"];
+  if (susWords.some((w) => note.includes(w))) {
+    score += 30;
+    flags.push("Suspicious wording in note");
+  }
+
+  // no wallet attached = tiny risk bump
+  if (!walletAddress) {
+    score += 5;
+    flags.push("No crypto wallet linked");
+  }
+
+  // cap at 100
+  const finalScore = Math.min(100, score);
+
+  let level = "Low";
+  if (finalScore >= 70) level = "High";
+  else if (finalScore >= 40) level = "Medium";
+
+  return {
+    score: finalScore,
+    level,
+    flags,
+  };
+}
+
 // ------- simulated blockchain with real blocks -------
 function readBlockchainLog() {
   return readJson(BLOCKCHAIN_FILE);
@@ -86,8 +129,7 @@ function writeBlockchainLog(data) {
 function appendBlockchainBlock(metadataHash) {
   const chain = readBlockchainLog();
   const index = chain.length;
-  const prevHash =
-    index === 0 ? "GENESIS" : chain[index - 1].blockHash;
+  const prevHash = index === 0 ? "GENESIS" : chain[index - 1].blockHash;
   const createdAt = new Date().toISOString();
 
   const payload = JSON.stringify({
@@ -124,7 +166,7 @@ function computeMerkleRoot(hashes) {
     const next = [];
     for (let i = 0; i < level.length; i += 2) {
       const left = level[i];
-      const right = i + 1 < level.length ? level[i + 1] : left;
+      const right = i + 1 < level.length ? level[i + 1] : left; // duplicate last if odd
       const combined = left + right;
       next.push(CryptoJS.SHA256(combined).toString());
     }
@@ -138,14 +180,14 @@ function computeMerkleRoot(hashes) {
 
 app.get("/", (req, res) => {
   res.send(
-    "Zakat backend running with storage, AI categories, simulated blockchain & Merkle root."
+    "Zakat backend running with storage, AI categories, risk scoring, simulated blockchain & Merkle root."
   );
 });
 
 // ---- DONATION ENDPOINT ----
 app.post("/donate", (req, res) => {
   try {
-    const { amount, note } = req.body;
+    const { amount, note, walletAddress } = req.body;
 
     const numAmount = parseFloat(amount);
     if (!numAmount || numAmount <= 0) {
@@ -154,6 +196,7 @@ app.post("/donate", (req, res) => {
 
     const anonymousId = CryptoJS.SHA256(Date.now().toString()).toString();
     const category = classifyCategory(note || "");
+    const risk = scoreRisk(numAmount, note || "", walletAddress || null);
 
     const receipt = {
       anonymousId,
@@ -161,12 +204,12 @@ app.post("/donate", (req, res) => {
       note: note || null,
       category,
       currency: "PKR",
+      walletAddress: walletAddress || null,
+      risk,
       createdAt: new Date().toISOString(),
     };
 
-    const metadataHash = CryptoJS.SHA256(
-      JSON.stringify(receipt)
-    ).toString();
+    const metadataHash = CryptoJS.SHA256(JSON.stringify(receipt)).toString();
 
     const donationRecord = {
       id: Date.now(),
@@ -186,7 +229,7 @@ app.post("/donate", (req, res) => {
       receipt,
       block,
       message:
-        "Donation recorded, stored, and included in simulated blockchain.",
+        "Donation recorded, risk-scored, stored, and included in simulated blockchain.",
     });
   } catch (err) {
     console.error(err);

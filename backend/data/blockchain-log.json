@@ -1,32 +1,42 @@
 [
   {
-    "txId": 1764506523124,
-    "metadataHash": "75bcc41543c33ec11091f34dc8e729d132a8dd43eb3cb8e2d7013167bceac4d6",
-    "network": "Simulated chain",
-    "createdAt": "2025-11-30T12:42:03.124Z"
+    "index": 0,
+    "metadataHash": "10cbf73b61b6f5896a88e71ebcd40d3da1b75260f0ca9f92f6e921a3c79b6b62",
+    "prevHash": "GENESIS",
+    "blockHash": "69796009ca46f14f86920c83f3b6853fb4195bd8b5a8b8b50f4f7b285ef7c3e3",
+    "createdAt": "2025-11-30T14:07:43.079Z",
+    "network": "Simulated chain"
   },
   {
-    "txId": 1764506539470,
-    "metadataHash": "bc05dd72846887d6df14dcc3ec023cd575fce81df66c33f967b2e1073dfd5614",
-    "network": "Simulated chain",
-    "createdAt": "2025-11-30T12:42:19.470Z"
+    "index": 1,
+    "metadataHash": "f4de5fdd621f95b717b7b6da3cab891b9d3afd8a1acdaff1cd3b56424fb58494",
+    "prevHash": "69796009ca46f14f86920c83f3b6853fb4195bd8b5a8b8b50f4f7b285ef7c3e3",
+    "blockHash": "9b8d0eadb4d9cd1c46fa3ae9a835b049e9095881539898e2fdc4c0cbe85d8fbb",
+    "createdAt": "2025-11-30T14:07:51.350Z",
+    "network": "Simulated chain"
   },
   {
-    "txId": 1764506546903,
-    "metadataHash": "9e1cb6edf2e35ec0b1755316e9149acc0c677d307b29bf20d0ae0eb07c4142c8",
-    "network": "Simulated chain",
-    "createdAt": "2025-11-30T12:42:26.903Z"
+    "index": 2,
+    "metadataHash": "05043e7f62a81bbd91fdb5fc42eb64c42755034f51a5556e56686fd12c8a5558",
+    "prevHash": "9b8d0eadb4d9cd1c46fa3ae9a835b049e9095881539898e2fdc4c0cbe85d8fbb",
+    "blockHash": "9b7ce54039a5411f5b9c882adcf3e5c36c414f9e0b64bd1d6edc8692af6dbef3",
+    "createdAt": "2025-11-30T14:07:57.764Z",
+    "network": "Simulated chain"
   },
   {
-    "txId": 1764506553048,
-    "metadataHash": "93e650ebfbbaebf75302755ab49c920e70c8a3fcaab12e20e14399c2c0319aea",
-    "network": "Simulated chain",
-    "createdAt": "2025-11-30T12:42:33.048Z"
+    "index": 3,
+    "metadataHash": "d5c5e700c0b863f914af594bd71f796dfd0512a445b130450357e673f2a9ade4",
+    "prevHash": "9b7ce54039a5411f5b9c882adcf3e5c36c414f9e0b64bd1d6edc8692af6dbef3",
+    "blockHash": "adf64ae6008b21c2c4597c07819bc14305b11b61db8a1e6f1e572dcdea42984e",
+    "createdAt": "2025-11-30T14:08:05.027Z",
+    "network": "Simulated chain"
   },
   {
-    "txId": 1764506563346,
-    "metadataHash": "6d0d51f0427264ed7e14486b30032e7fb67f170b16dd5e555e59bb7a65607a84",
-    "network": "Simulated chain",
-    "createdAt": "2025-11-30T12:42:43.346Z"
+    "index": 4,
+    "metadataHash": "b8a8766f7574a41dc6eadab68eef9bdbbc39818bd6306806a5e3bde439ca5f2c",
+    "prevHash": "adf64ae6008b21c2c4597c07819bc14305b11b61db8a1e6f1e572dcdea42984e",
+    "blockHash": "01413e311c6f0b5e018ded9488bd2b0787b92fbacd866959091679edd325d189",
+    "createdAt": "2025-11-30T14:08:19.366Z",
+    "network": "Simulated chain"
   }
 ]

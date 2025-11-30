@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Zakat Prototype</title>
+  <title>Zakat Prototype – Crypto + Risk</title>
   <style>
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -18,7 +18,7 @@
       background: white;
       padding: 24px;
       border-radius: 12px;
-      width: 460px;
+      width: 480px;
       box-shadow: 0 10px 25px rgba(0,0,0,0.08);
     }
     h1 {
@@ -44,35 +44,41 @@
       margin-bottom: 12px;
       font-size: 14px;
     }
-    .btn-primary {
+    .btn-primary, .btn-secondary, .btn-wallet {
       width: 100%;
-      padding: 10px 12px;
+      padding: 9px 12px;
       border-radius: 8px;
       border: none;
+      font-size: 13px;
+      cursor: pointer;
+      margin-bottom: 6px;
+    }
+    .btn-primary {
       background: #2563eb;
       color: white;
-      font-size: 14px;
-      cursor: pointer;
-      margin-bottom: 8px;
     }
     .btn-primary:disabled {
       opacity: 0.7;
       cursor: default;
     }
     .btn-secondary {
-      width: 100%;
-      padding: 8px 10px;
-      border-radius: 8px;
       border: 1px solid #2563eb;
       background: white;
       color: #2563eb;
-      font-size: 13px;
-      cursor: pointer;
-      margin-bottom: 6px;
     }
     .btn-secondary:disabled {
       opacity: 0.4;
       cursor: default;
+    }
+    .btn-wallet {
+      background: #f97316;
+      color: white;
+    }
+    .wallet-info {
+      font-size: 11px;
+      color: #4b5563;
+      margin-bottom: 10px;
+      word-break: break-all;
     }
     pre {
       background: #f9fafb;
@@ -96,25 +102,48 @@
       font-size: 11px;
       color: #6b7280;
     }
+    .risk-banner {
+      margin-top: 8px;
+      font-size: 12px;
+      padding: 8px 10px;
+      border-radius: 8px;
+    }
+    .risk-low {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .risk-medium {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .risk-high {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
   </style>
 </head>
 <body>
   <div class="card">
     <h1>Zakat Transaction Prototype</h1>
-    <p>Send a test zakat payment to the backend. Anonymous, hashed & logged on a simulated blockchain.</p>
+    <p>Anonymous zakat with crypto wallet link, AI risk scoring & simulated blockchain logging.</p>
+
+    <button id="wallet-btn" class="btn-wallet">Connect MetaMask Wallet (Optional)</button>
+    <div id="wallet-info" class="wallet-info">Wallet: Not connected</div>
 
     <form id="donation-form">
       <label for="amount">Amount (PKR)</label>
       <input id="amount" type="number" step="0.01" required placeholder="e.g. 1000" />
 
       <label for="note">Note (optional)</label>
-      <input id="note" type="text" placeholder="e.g. Ramzan zakat" />
+      <input id="note" type="text" placeholder="e.g. Ramzan zakat for food" />
 
       <button type="submit" id="submit-btn" class="btn-primary">Send Zakat (Simulated)</button>
     </form>
 
     <button id="pdf-btn" class="btn-secondary" disabled>Download Receipt (PDF)</button>
     <button id="qr-btn" class="btn-secondary" disabled>Generate QR for Verification</button>
+
+    <div id="risk-banner" class="risk-banner" style="display:none;"></div>
 
     <div id="qr-container">
       <div id="qrcode"></div>
@@ -137,10 +166,32 @@
     const qrBtn = document.getElementById("qr-btn");
     const qrDiv = document.getElementById("qrcode");
     const qrCaption = document.getElementById("qr-caption");
+    const walletBtn = document.getElementById("wallet-btn");
+    const walletInfo = document.getElementById("wallet-info");
+    const riskBanner = document.getElementById("risk-banner");
 
     let lastResponse = null;
-    let qrInstance = null;
+    let currentWallet = null;
 
+    // --------- METAMASK / WALLET LOGIC ----------
+    walletBtn.addEventListener("click", async () => {
+      if (!window.ethereum) {
+        alert("MetaMask not detected. Install the browser extension to link a crypto wallet.");
+        return;
+      }
+
+      try {
+        const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+        currentWallet = accounts[0];
+        walletInfo.textContent = "Wallet: " + currentWallet;
+        walletBtn.textContent = "Wallet Connected";
+      } catch (err) {
+        console.error(err);
+        alert("Could not connect wallet: " + err.message);
+      }
+    });
+
+    // --------- DONATION SUBMIT ----------
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const amount = document.getElementById("amount").value;
@@ -153,6 +204,7 @@
       lastResponse = null;
       qrDiv.innerHTML = "";
       qrCaption.textContent = "";
+      riskBanner.style.display = "none";
 
       try {
         const res = await fetch("http://localhost:5000/donate", {
@@ -163,6 +215,7 @@
           body: JSON.stringify({
             amount: Number(amount),
             note: note,
+            walletAddress: currentWallet,
           }),
         });
 
@@ -173,14 +226,31 @@
         if (data && data.status === "ok") {
           pdfBtn.disabled = false;
           qrBtn.disabled = false;
+
+          const risk = data.receipt?.risk;
+          if (risk) {
+            let cls = "risk-low";
+            if (risk.level === "Medium") cls = "risk-medium";
+            if (risk.level === "High") cls = "risk-high";
+
+            riskBanner.className = "risk-banner " + cls;
+            riskBanner.style.display = "block";
+            riskBanner.textContent =
+              `Risk level: ${risk.level} (${risk.score}%). Flags: ` +
+              (risk.flags && risk.flags.length ? risk.flags.join(", ") : "None");
+          }
+        } else {
+          riskBanner.style.display = "none";
         }
       } catch (err) {
         resultEl.textContent = "Error: " + err.message;
+        riskBanner.style.display = "none";
       } finally {
         btn.disabled = false;
       }
     });
 
+    // --------- PDF RECEIPT ----------
     pdfBtn.addEventListener("click", () => {
       if (!lastResponse || !lastResponse.receipt) return;
 
@@ -190,6 +260,7 @@
       const r = lastResponse.receipt;
       const hash = lastResponse.metadataHash;
       const block = lastResponse.block;
+      const risk = r.risk;
 
       let y = 15;
       doc.setFontSize(16);
@@ -201,30 +272,53 @@
       doc.text(`Note: ${r.note || "-"}`, 10, y); y += 7;
       doc.text(`Category: ${r.category || "General"}`, 10, y); y += 7;
       doc.text(`Currency: ${r.currency}`, 10, y); y += 7;
-      doc.text(`Anonymous ID:`, 10, y); y += 5;
-      doc.text(r.anonymousId, 10, y); y += 7;
+
+      if (r.walletAddress) {
+        doc.text("Wallet Address:", 10, y); y += 5;
+        const splitWallet = doc.splitTextToSize(r.walletAddress, 190);
+        doc.text(splitWallet, 10, y);
+        y += 7 * splitWallet.length;
+      }
+
+      doc.text("Anonymous ID:", 10, y); y += 5;
+      const splitAnon = doc.splitTextToSize(r.anonymousId, 190);
+      doc.text(splitAnon, 10, y);
+      y += 7 * splitAnon.length;
+
       doc.text(`Timestamp: ${r.createdAt}`, 10, y); y += 7;
+
+      if (risk) {
+        doc.text(`Risk level: ${risk.level} (${risk.score}%)`, 10, y); y += 7;
+        if (risk.flags && risk.flags.length) {
+          doc.text("Risk flags:", 10, y); y += 5;
+          const splitFlags = doc.splitTextToSize(risk.flags.join("; "), 190);
+          doc.text(splitFlags, 10, y);
+          y += 7 * splitFlags.length;
+        }
+      }
 
       if (block) {
         doc.text(`Block Index: ${block.index}`, 10, y); y += 7;
-        doc.text(`Block Hash:`, 10, y); y += 5;
+        doc.text("Block Hash:", 10, y); y += 5;
         const splitBlock = doc.splitTextToSize(block.blockHash, 190);
         doc.text(splitBlock, 10, y);
         y += 7 * splitBlock.length;
       }
 
-      doc.text(`Metadata Hash:`, 10, y); y += 5;
+      doc.text("Metadata Hash:", 10, y); y += 5;
       const splitHash = doc.splitTextToSize(hash, 190);
       doc.text(splitHash, 10, y);
 
       doc.save("zakat-receipt.pdf");
     });
 
+    // --------- QR RECEIPT ----------
     qrBtn.addEventListener("click", () => {
       if (!lastResponse || !lastResponse.receipt) return;
       const r = lastResponse.receipt;
       const hash = lastResponse.metadataHash;
       const block = lastResponse.block || {};
+      const risk = r.risk;
 
       const payload = JSON.stringify({
         anonymousId: r.anonymousId,
@@ -232,16 +326,20 @@
         blockIndex: block.index,
         blockHash: block.blockHash,
         createdAt: r.createdAt,
+        walletAddress: r.walletAddress,
+        riskLevel: risk?.level,
+        riskScore: risk?.score,
       });
 
       qrDiv.innerHTML = "";
-      qrInstance = new QRCode(qrDiv, {
+      new QRCode(qrDiv, {
         text: payload,
         width: 140,
         height: 140,
       });
 
-      qrCaption.textContent = "QR encodes anonymousId + metadataHash + block reference for offline verification.";
+      qrCaption.textContent =
+        "QR encodes anonymousId + metadataHash + block + wallet & risk info for offline verification.";
     });
   </script>
 </body>
