@@ -99,6 +99,7 @@
               <th>ID</th>
               <th>Amount (PKR)</th>
               <th>Note</th>
+              <th>Category</th>
               <th>Anon ID</th>
               <th>Metadata Hash</th>
               <th>Created At</th>
@@ -150,11 +151,16 @@
           noteTd.textContent = receipt.note ?? "";
           tr.appendChild(noteTd);
 
+          const categoryTd = document.createElement("td");
+          categoryTd.textContent = receipt.category || "General";
+          tr.appendChild(categoryTd);
+
           const anonTd = document.createElement("td");
           const anonCode = document.createElement("code");
           anonCode.textContent = receipt.anonymousId || "";
           anonTd.appendChild(anonCode);
           tr.appendChild(anonTd);
+
 
           const hashTd = document.createElement("td");
           const hashCode = document.createElement("code");

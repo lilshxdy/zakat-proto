@@ -42,5 +42,17 @@
       "currency": "PKR",
       "createdAt": "2025-11-30T10:39:16.118Z"
     }
+  },
+  {
+    "id": 1764501988950,
+    "metadataHash": "0d9c40b229f0c9e6e875bb0dcc4b650bd053775cb2c6f50be23c07a77f3af416",
+    "receipt": {
+      "anonymousId": "f1a2d1f252b921517369287acafca07848ce57f463c13944fb0d1dc0cedd6239",
+      "amount": 1200,
+      "note": "food ration for poor family",
+      "category": "Food",
+      "currency": "PKR",
+      "createdAt": "2025-11-30T11:26:28.950Z"
+    }
   }
 ]

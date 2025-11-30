@@ -40,6 +40,30 @@ function saveDonation(donation) {
   fs.writeFileSync(DONATIONS_FILE, JSON.stringify(all, null, 2), "utf8");
 }
 
+// very simple "AI" classifier based on keywords in the note
+function classifyCategory(noteRaw) {
+  if (!noteRaw) return "General";
+
+  const note = noteRaw.toLowerCase();
+
+  if (note.includes("food") || note.includes("ration") || note.includes("grocery"))
+    return "Food";
+
+  if (note.includes("school") || note.includes("fees") || note.includes("education") || note.includes("study"))
+    return "Education";
+
+  if (note.includes("hospital") || note.includes("medicine") || note.includes("medical") || note.includes("treatment"))
+    return "Medical";
+
+  if (note.includes("orphan") || note.includes("widow") || note.includes("yateem"))
+    return "Orphans / Widows";
+
+  if (note.includes("ramzan") || note.includes("fitra") || note.includes("eid"))
+    return "Ramzan / Fitra";
+
+  return "General";
+}
+
 app.get("/", (req, res) => {
   res.send("Zakat backend is running with storage");
 });
@@ -56,13 +80,17 @@ app.post("/donate", (req, res) => {
 
     const anonymousId = CryptoJS.SHA256(Date.now().toString()).toString();
 
-    const receipt = {
-      anonymousId,
-      amount: numAmount,
-      note: note || null,
-      currency: "PKR",
-      createdAt: new Date().toISOString(),
-    };
+const category = classifyCategory(note || "");  // <-- NEW AI TAG
+
+const receipt = {
+  anonymousId,
+  amount: numAmount,
+  note: note || null,
+  category,               // <-- ADDED HERE
+  currency: "PKR",
+  createdAt: new Date().toISOString(),
+};
+
 
     const metadataHash = CryptoJS.SHA256(
       JSON.stringify(receipt)
