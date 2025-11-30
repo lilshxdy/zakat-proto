@@ -18,7 +18,7 @@
       background: white;
       padding: 24px;
       border-radius: 12px;
-      width: 420px;
+      width: 460px;
       box-shadow: 0 10px 25px rgba(0,0,0,0.08);
     }
     h1 {
@@ -68,6 +68,7 @@
       color: #2563eb;
       font-size: 13px;
       cursor: pointer;
+      margin-bottom: 6px;
     }
     .btn-secondary:disabled {
       opacity: 0.4;
@@ -82,12 +83,25 @@
       margin-top: 14px;
       max-height: 260px;
     }
+    #qr-container {
+      margin-top: 10px;
+      text-align: center;
+    }
+    #qrcode {
+      display: inline-block;
+      margin-top: 4px;
+    }
+    small {
+      display: block;
+      font-size: 11px;
+      color: #6b7280;
+    }
   </style>
 </head>
 <body>
   <div class="card">
     <h1>Zakat Transaction Prototype</h1>
-    <p>Send a test zakat payment to the backend. No real money, just a prototype.</p>
+    <p>Send a test zakat payment to the backend. Anonymous, hashed & logged on a simulated blockchain.</p>
 
     <form id="donation-form">
       <label for="amount">Amount (PKR)</label>
@@ -100,20 +114,32 @@
     </form>
 
     <button id="pdf-btn" class="btn-secondary" disabled>Download Receipt (PDF)</button>
+    <button id="qr-btn" class="btn-secondary" disabled>Generate QR for Verification</button>
+
+    <div id="qr-container">
+      <div id="qrcode"></div>
+      <small id="qr-caption"></small>
+    </div>
 
     <pre id="result"></pre>
   </div>
 
   <!-- jsPDF CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-/u36GJqMmcQwbrjywBixna8/VddJlj/QWQ0VqWbR6p5CAbCw7YzMwZHv9MA2x6n7wCI86U0JvC32J2r3l4iJ/w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- QRCode CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <script>
     const form = document.getElementById("donation-form");
     const resultEl = document.getElementById("result");
     const btn = document.getElementById("submit-btn");
     const pdfBtn = document.getElementById("pdf-btn");
+    const qrBtn = document.getElementById("qr-btn");
+    const qrDiv = document.getElementById("qrcode");
+    const qrCaption = document.getElementById("qr-caption");
 
     let lastResponse = null;
+    let qrInstance = null;
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -123,7 +149,10 @@
       resultEl.textContent = "Sending...";
       btn.disabled = true;
       pdfBtn.disabled = true;
+      qrBtn.disabled = true;
       lastResponse = null;
+      qrDiv.innerHTML = "";
+      qrCaption.textContent = "";
 
       try {
         const res = await fetch("http://localhost:5000/donate", {
@@ -143,6 +172,7 @@
 
         if (data && data.status === "ok") {
           pdfBtn.disabled = false;
+          qrBtn.disabled = false;
         }
       } catch (err) {
         resultEl.textContent = "Error: " + err.message;
@@ -159,6 +189,7 @@
 
       const r = lastResponse.receipt;
       const hash = lastResponse.metadataHash;
+      const block = lastResponse.block;
 
       let y = 15;
       doc.setFontSize(16);
@@ -173,12 +204,44 @@
       doc.text(`Anonymous ID:`, 10, y); y += 5;
       doc.text(r.anonymousId, 10, y); y += 7;
       doc.text(`Timestamp: ${r.createdAt}`, 10, y); y += 7;
-      doc.text(`Metadata Hash:`, 10, y); y += 5;
 
+      if (block) {
+        doc.text(`Block Index: ${block.index}`, 10, y); y += 7;
+        doc.text(`Block Hash:`, 10, y); y += 5;
+        const splitBlock = doc.splitTextToSize(block.blockHash, 190);
+        doc.text(splitBlock, 10, y);
+        y += 7 * splitBlock.length;
+      }
+
+      doc.text(`Metadata Hash:`, 10, y); y += 5;
       const splitHash = doc.splitTextToSize(hash, 190);
       doc.text(splitHash, 10, y);
 
       doc.save("zakat-receipt.pdf");
+    });
+
+    qrBtn.addEventListener("click", () => {
+      if (!lastResponse || !lastResponse.receipt) return;
+      const r = lastResponse.receipt;
+      const hash = lastResponse.metadataHash;
+      const block = lastResponse.block || {};
+
+      const payload = JSON.stringify({
+        anonymousId: r.anonymousId,
+        metadataHash: hash,
+        blockIndex: block.index,
+        blockHash: block.blockHash,
+        createdAt: r.createdAt,
+      });
+
+      qrDiv.innerHTML = "";
+      qrInstance = new QRCode(qrDiv, {
+        text: payload,
+        width: 140,
+        height: 140,
+      });
+
+      qrCaption.textContent = "QR encodes anonymousId + metadataHash + block reference for offline verification.";
     });
   </script>
 </body>

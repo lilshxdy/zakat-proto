@@ -74,26 +74,72 @@ function classifyCategory(noteRaw) {
   return "General";
 }
 
-// ------- simulated blockchain log -------
+// ------- simulated blockchain with real blocks -------
 function readBlockchainLog() {
   return readJson(BLOCKCHAIN_FILE);
 }
 
-function appendBlockchainRecord(metadataHash) {
-  const log = readBlockchainLog();
-  log.push({
-    txId: Date.now(), // fake tx id
+function writeBlockchainLog(data) {
+  writeJson(BLOCKCHAIN_FILE, data);
+}
+
+function appendBlockchainBlock(metadataHash) {
+  const chain = readBlockchainLog();
+  const index = chain.length;
+  const prevHash =
+    index === 0 ? "GENESIS" : chain[index - 1].blockHash;
+  const createdAt = new Date().toISOString();
+
+  const payload = JSON.stringify({
+    index,
     metadataHash,
-    network: "Simulated chain",
-    createdAt: new Date().toISOString(),
+    prevHash,
+    createdAt,
   });
-  writeJson(BLOCKCHAIN_FILE, log);
+
+  const blockHash = CryptoJS.SHA256(payload).toString();
+
+  const block = {
+    index,
+    metadataHash,
+    prevHash,
+    blockHash,
+    createdAt,
+    network: "Simulated chain",
+  };
+
+  chain.push(block);
+  writeBlockchainLog(chain);
+
+  return block;
+}
+
+// ------- Merkle tree utilities -------
+function computeMerkleRoot(hashes) {
+  if (!hashes || hashes.length === 0) return null;
+
+  let level = hashes.slice();
+
+  while (level.length > 1) {
+    const next = [];
+    for (let i = 0; i < level.length; i += 2) {
+      const left = level[i];
+      const right = i + 1 < level.length ? level[i + 1] : left;
+      const combined = left + right;
+      next.push(CryptoJS.SHA256(combined).toString());
+    }
+    level = next;
+  }
+
+  return level[0];
 }
 
 // ---------- ROUTES ----------
 
 app.get("/", (req, res) => {
-  res.send("Zakat backend is running with storage + simulated blockchain");
+  res.send(
+    "Zakat backend running with storage, AI categories, simulated blockchain & Merkle root."
+  );
 });
 
 // ---- DONATION ENDPOINT ----
@@ -128,18 +174,19 @@ app.post("/donate", (req, res) => {
       receipt,
     };
 
-    // save to donations "db"
+    // save donation
     saveDonation(donationRecord);
 
-    // simulate writing hash on-chain
-    appendBlockchainRecord(metadataHash);
+    // append new block to simulated chain
+    const block = appendBlockchainBlock(metadataHash);
 
     return res.json({
       status: "ok",
       metadataHash,
       receipt,
+      block,
       message:
-        "Donation recorded (simulated), stored, and hash logged to simulated blockchain.",
+        "Donation recorded, stored, and included in simulated blockchain.",
     });
   } catch (err) {
     console.error(err);
@@ -158,7 +205,7 @@ app.get("/donations", (req, res) => {
   }
 });
 
-// ---- LIST BLOCKCHAIN LOG (simulated) ----
+// ---- LIST BLOCKCHAIN LOG (blocks) ----
 app.get("/blockchain-log", (req, res) => {
   try {
     const log = readBlockchainLog();
@@ -166,6 +213,28 @@ app.get("/blockchain-log", (req, res) => {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Could not read blockchain log" });
+  }
+});
+
+// ---- MERKLE TREE INFO ----
+app.get("/merkle-tree", (req, res) => {
+  try {
+    const donations = readDonations();
+    const leaves = donations.map((d) => ({
+      id: d.id,
+      hash: d.metadataHash,
+    }));
+    const hashes = leaves.map((l) => l.hash);
+    const root = computeMerkleRoot(hashes);
+
+    return res.json({
+      root,
+      leafCount: leaves.length,
+      leaves,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Could not compute Merkle root" });
   }
 });
 

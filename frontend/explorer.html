@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Zakat – Blockchain Explorer (Simulated)</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f3f4f6;
+      margin: 0;
+      padding: 24px;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    p {
+      font-size: 13px;
+      color: #4b5563;
+      margin-top: 0;
+    }
+    .card {
+      background: white;
+      padding: 16px 20px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+      margin-top: 12px;
+    }
+    .chain-status {
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    .ok {
+      color: #16a34a;
+    }
+    .bad {
+      color: #dc2626;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+    th, td {
+      padding: 8px 6px;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #f9fafb;
+    }
+    code {
+      font-size: 11px;
+      word-break: break-all;
+    }
+    .chain-visual {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .block-box {
+      background: #1f2937;
+      color: white;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      min-width: 110px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Zakat – Blockchain Explorer (Simulated)</h1>
+    <p>Every donation’s metadata hash is included in a simple block structure. This page visualizes the chain and verifies continuity.</p>
+
+    <div class="card">
+      <button id="refresh-btn">Refresh</button>
+      <div id="status" class="chain-status">Loading chain...</div>
+
+      <div class="chain-visual" id="chain-visual"></div>
+
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Index</th>
+              <th>Block Hash</th>
+              <th>Prev Hash</th>
+              <th>Metadata Hash</th>
+              <th>Created At</th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const statusEl = document.getElementById("status");
+    const tbody = document.getElementById("table-body");
+    const visual = document.getElementById("chain-visual");
+    const refreshBtn = document.getElementById("refresh-btn");
+
+    async function loadChain() {
+      statusEl.textContent = "Loading chain...";
+      tbody.innerHTML = "";
+      visual.innerHTML = "";
+      refreshBtn.disabled = true;
+
+      try {
+        const res = await fetch("http://localhost:5000/blockchain-log");
+        const data = await res.json();
+
+        if (!Array.isArray(data) || data.length === 0) {
+          statusEl.textContent = "No blocks yet – make a donation first.";
+          refreshBtn.disabled = false;
+          return;
+        }
+
+        data.sort((a, b) => a.index - b.index);
+
+        let valid = true;
+        let reason = "";
+
+        for (let i = 0; i < data.length; i++) {
+          const block = data[i];
+          const prev = i === 0 ? null : data[i - 1];
+
+          if (i === 0 && block.prevHash !== "GENESIS") {
+            valid = false;
+            reason = "Genesis block prevHash mismatch.";
+          }
+          if (i > 0 && block.prevHash !== prev.blockHash) {
+            valid = false;
+            if (!reason) reason = `Block ${block.index} prevHash does not match previous blockHash.`;
+          }
+
+          const tr = document.createElement("tr");
+
+          const idxTd = document.createElement("td");
+          idxTd.textContent = block.index;
+          tr.appendChild(idxTd);
+
+          const hashTd = document.createElement("td");
+          const hashCode = document.createElement("code");
+          hashCode.textContent = block.blockHash;
+          hashTd.appendChild(hashCode);
+          tr.appendChild(hashTd);
+
+          const prevTd = document.createElement("td");
+          const prevCode = document.createElement("code");
+          prevCode.textContent = block.prevHash;
+          prevTd.appendChild(prevCode);
+          tr.appendChild(prevTd);
+
+          const metaTd = document.createElement("td");
+          const metaCode = document.createElement("code");
+          metaCode.textContent = block.metadataHash;
+          metaTd.appendChild(metaCode);
+          tr.appendChild(metaTd);
+
+          const timeTd = document.createElement("td");
+          timeTd.textContent = block.createdAt || "";
+          tr.appendChild(timeTd);
+
+          tbody.appendChild(tr);
+
+          const box = document.createElement("div");
+          box.className = "block-box";
+          box.innerHTML = `#${block.index}<br/>${block.blockHash.slice(0,10)}...`;
+          visual.appendChild(box);
+        }
+
+        if (valid) {
+          statusEl.innerHTML = `<span class="ok">✔ Chain valid.</span> All prevHash links match.`;
+        } else {
+          statusEl.innerHTML = `<span class="bad">⚠ Chain broken:</span> ${reason}`;
+        }
+      } catch (err) {
+        statusEl.textContent = "Error loading chain: " + err.message;
+      } finally {
+        refreshBtn.disabled = false;
+      }
+    }
+
+    refreshBtn.addEventListener("click", loadChain);
+    loadChain();
+  </script>
+</body>
+</html>
