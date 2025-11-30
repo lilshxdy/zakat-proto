@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Zakat Prototype</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f3f4f6;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .card {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      width: 400px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    }
+    h1 {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+    p {
+      font-size: 13px;
+      color: #4b5563;
+      margin-top: 0;
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+    input {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+    button {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    button:disabled {
+      opacity: 0.7;
+      cursor: default;
+    }
+    pre {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 11px;
+      overflow-x: auto;
+      margin-top: 14px;
+      max-height: 240px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Zakat Transaction Prototype</h1>
+    <p>Send a test zakat payment to the backend. No real money, just a prototype.</p>
+
+    <form id="donation-form">
+      <label for="amount">Amount (PKR)</label>
+      <input id="amount" type="number" step="0.01" required placeholder="e.g. 1000" />
+
+      <label for="note">Note (optional)</label>
+      <input id="note" type="text" placeholder="e.g. Ramzan zakat" />
+
+      <button type="submit" id="submit-btn">Send Zakat (Simulated)</button>
+    </form>
+
+    <pre id="result"></pre>
+  </div>
+
+  <script>
+    const form = document.getElementById("donation-form");
+    const resultEl = document.getElementById("result");
+    const btn = document.getElementById("submit-btn");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const amount = document.getElementById("amount").value;
+      const note = document.getElementById("note").value;
+
+      resultEl.textContent = "Sending...";
+      btn.disabled = true;
+
+      try {
+        const res = await fetch("http://localhost:5000/donate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            amount: Number(amount),
+            note: note,
+          }),
+        });
+
+        const data = await res.json();
+        resultEl.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        resultEl.textContent = "Error: " + err.message;
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
