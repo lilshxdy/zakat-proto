@@ -54,5 +54,65 @@
       "currency": "PKR",
       "createdAt": "2025-11-30T11:26:28.950Z"
     }
+  },
+  {
+    "id": 1764506523122,
+    "metadataHash": "75bcc41543c33ec11091f34dc8e729d132a8dd43eb3cb8e2d7013167bceac4d6",
+    "receipt": {
+      "anonymousId": "06b9b92d33253ec4bbd67abb25a8a7c6ba5bd40ab92a5c4f28a659021cf6f31d",
+      "amount": 1200,
+      "note": "Food",
+      "category": "Food",
+      "currency": "PKR",
+      "createdAt": "2025-11-30T12:42:03.121Z"
+    }
+  },
+  {
+    "id": 1764506539468,
+    "metadataHash": "bc05dd72846887d6df14dcc3ec023cd575fce81df66c33f967b2e1073dfd5614",
+    "receipt": {
+      "anonymousId": "b0b2f1acd159a594f4f70634b4ae77a0e1e8eb3a8b8bd287ad7ae7eac61301de",
+      "amount": 2000,
+      "note": "School Fees",
+      "category": "Education",
+      "currency": "PKR",
+      "createdAt": "2025-11-30T12:42:19.468Z"
+    }
+  },
+  {
+    "id": 1764506546898,
+    "metadataHash": "9e1cb6edf2e35ec0b1755316e9149acc0c677d307b29bf20d0ae0eb07c4142c8",
+    "receipt": {
+      "anonymousId": "3fecc3cab731fd2e31ce0bd70d02128433db174a8449a51c57aa1226f0c6c01a",
+      "amount": 1000,
+      "note": "Bill",
+      "category": "General",
+      "currency": "PKR",
+      "createdAt": "2025-11-30T12:42:26.898Z"
+    }
+  },
+  {
+    "id": 1764506553043,
+    "metadataHash": "93e650ebfbbaebf75302755ab49c920e70c8a3fcaab12e20e14399c2c0319aea",
+    "receipt": {
+      "anonymousId": "85601fe402b6706cb0af77247753ef91962a4821000eb173e717669aaaabd22e",
+      "amount": 1400,
+      "note": "Food",
+      "category": "Food",
+      "currency": "PKR",
+      "createdAt": "2025-11-30T12:42:33.043Z"
+    }
+  },
+  {
+    "id": 1764506563343,
+    "metadataHash": "6d0d51f0427264ed7e14486b30032e7fb67f170b16dd5e555e59bb7a65607a84",
+    "receipt": {
+      "anonymousId": "6c8ade287e0db41e3cfc1b6bf53f5559f0112d90f4dc561266b7fc5019b4d64b",
+      "amount": 2050,
+      "note": "Hospital",
+      "category": "Medical",
+      "currency": "PKR",
+      "createdAt": "2025-11-30T12:42:43.342Z"
+    }
   }
 ]

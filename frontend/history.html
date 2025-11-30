@@ -11,7 +11,7 @@
       padding: 24px;
     }
     .container {
-      max-width: 900px;
+      max-width: 1000px;
       margin: 0 auto;
     }
     h1 {
@@ -40,6 +40,7 @@
       padding: 8px 6px;
       border-bottom: 1px solid #e5e7eb;
       text-align: left;
+      vertical-align: top;
     }
     th {
       background: #f9fafb;
@@ -76,47 +77,163 @@
       color: #4b5563;
       margin-top: 6px;
     }
+    .login-card {
+      max-width: 400px;
+      margin: 40px auto;
+    }
+    .login-card input {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    .hidden {
+      display: none;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      color: white;
+    }
+    .badge-food { background: #16a34a; }
+    .badge-education { background: #3b82f6; }
+    .badge-medical { background: #dc2626; }
+    .badge-orphans { background: #7c3aed; }
+    .badge-ramzan { background: #f97316; }
+    .badge-general { background: #6b7280; }
+    canvas {
+      max-width: 100%;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="topbar">
-      <div>
-        <h1>Zakat Admin – Donation History</h1>
-        <p>View all stored anonymous donations pulled from the backend.</p>
-      </div>
-      <div>
-        <button id="refresh-btn">Refresh</button>
-      </div>
+
+    <!-- LOGIN VIEW -->
+    <div id="login-view" class="card login-card">
+      <h1>Admin Login</h1>
+      <p>Prototype-only login. Hard-coded credentials for demo.</p>
+      <label>Username</label>
+      <input id="login-username" type="text" placeholder="admin" />
+      <label>Password</label>
+      <input id="login-password" type="password" placeholder="zakat123" />
+      <button id="login-btn">Login</button>
+      <div id="login-error" class="status"></div>
     </div>
 
-    <div class="card">
-      <div class="status" id="status">Loading donations...</div>
-      <div style="overflow-x: auto; margin-top: 8px;">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Amount (PKR)</th>
-              <th>Note</th>
-              <th>Category</th>
-              <th>Anon ID</th>
-              <th>Metadata Hash</th>
-              <th>Created At</th>
-            </tr>
-          </thead>
-          <tbody id="table-body">
-          </tbody>
-        </table>
+    <!-- MAIN ADMIN VIEW -->
+    <div id="admin-view" class="hidden">
+      <div class="topbar">
+        <div>
+          <h1>Zakat Admin – Donation History</h1>
+          <p>View all stored anonymous donations pulled from the backend.</p>
+        </div>
+        <div>
+          <button id="refresh-btn">Refresh</button>
+        </div>
       </div>
+
+      <div class="card">
+        <div class="status" id="status">Loading donations...</div>
+        <div style="overflow-x: auto; margin-top: 8px;">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Amount (PKR)</th>
+                <th>Note</th>
+                <th>Category</th>
+                <th>Anon ID</th>
+                <th>Metadata Hash</th>
+                <th>Created At</th>
+              </tr>
+            </thead>
+            <tbody id="table-body">
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 style="font-size:18px; margin-top:0;">Category Breakdown</h2>
+        <p style="margin-bottom:8px;">Auto-generated chart from AI-tagged categories.</p>
+        <canvas id="categoryChart" height="120"></canvas>
+      </div>
+
+      <div class="card">
+        <h2 style="font-size:18px; margin-top:0;">Simulated Blockchain Log</h2>
+        <p style="margin-bottom:8px;">Each metadata hash is also written to a simulated on-chain ledger.</p>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Tx ID</th>
+                <th>Metadata Hash</th>
+                <th>Network</th>
+                <th>Created At</th>
+              </tr>
+            </thead>
+            <tbody id="chain-body">
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
   </div>
 
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
   <script>
-    const tbody = document.getElementById("table-body");
+    const loginView = document.getElementById("login-view");
+    const adminView = document.getElementById("admin-view");
+    const loginBtn = document.getElementById("login-btn");
+    const loginError = document.getElementById("login-error");
     const statusEl = document.getElementById("status");
+    const tbody = document.getElementById("table-body");
+    const chainBody = document.getElementById("chain-body");
     const refreshBtn = document.getElementById("refresh-btn");
 
+    const USERNAME = "admin";
+    const PASSWORD = "zakat123";
+
+    let categoryChart = null;
+
+    // ---------- LOGIN LOGIC ----------
+    function showAdmin() {
+      loginView.classList.add("hidden");
+      adminView.classList.remove("hidden");
+      loadEverything();
+    }
+
+    function attemptAutoLogin() {
+      const flag = localStorage.getItem("zakatAdmin");
+      if (flag === "true") {
+        showAdmin();
+      }
+    }
+
+    loginBtn.addEventListener("click", () => {
+      const u = document.getElementById("login-username").value || "";
+      const p = document.getElementById("login-password").value || "";
+
+      if (u === USERNAME && p === PASSWORD) {
+        localStorage.setItem("zakatAdmin", "true");
+        loginError.textContent = "";
+        showAdmin();
+      } else {
+        loginError.textContent = "Invalid credentials (hint: admin / zakat123)";
+      }
+    });
+
+    attemptAutoLogin();
+
+    // ---------- DATA LOADING ----------
     async function loadDonations() {
       statusEl.textContent = "Loading donations...";
       tbody.innerHTML = "";
@@ -129,14 +246,16 @@
         if (!Array.isArray(data) || data.length === 0) {
           statusEl.textContent = "No donations found yet.";
           refreshBtn.disabled = false;
+          renderCategoryChart([]);
           return;
         }
 
         data.sort((a, b) => b.id - a.id); // newest first
 
+        const categoryCounts = {};
+
         for (const d of data) {
           const tr = document.createElement("tr");
-
           const receipt = d.receipt || {};
 
           const idTd = document.createElement("td");
@@ -152,7 +271,8 @@
           tr.appendChild(noteTd);
 
           const categoryTd = document.createElement("td");
-          categoryTd.textContent = receipt.category || "General";
+          const cat = (receipt.category || "General");
+          categoryTd.appendChild(createCategoryBadge(cat));
           tr.appendChild(categoryTd);
 
           const anonTd = document.createElement("td");
@@ -160,7 +280,6 @@
           anonCode.textContent = receipt.anonymousId || "";
           anonTd.appendChild(anonCode);
           tr.appendChild(anonTd);
-
 
           const hashTd = document.createElement("td");
           const hashCode = document.createElement("code");
@@ -173,18 +292,136 @@
           tr.appendChild(timeTd);
 
           tbody.appendChild(tr);
+
+          const key = cat;
+          categoryCounts[key] = (categoryCounts[key] || 0) + 1;
         }
 
         statusEl.textContent = `Loaded ${data.length} donation(s).`;
+        renderCategoryChart(categoryCounts);
       } catch (err) {
         statusEl.textContent = "Error loading donations: " + err.message;
+        renderCategoryChart([]);
       } finally {
         refreshBtn.disabled = false;
       }
     }
 
-    refreshBtn.addEventListener("click", loadDonations);
-    loadDonations();
+    function createCategoryBadge(cat) {
+      const span = document.createElement("span");
+      span.classList.add("badge");
+      const lower = cat.toLowerCase();
+
+      if (lower === "food") span.classList.add("badge-food");
+      else if (lower === "education") span.classList.add("badge-education");
+      else if (lower === "medical") span.classList.add("badge-medical");
+      else if (lower.startsWith("orphans")) span.classList.add("badge-orphans");
+      else if (lower.startsWith("ramzan")) span.classList.add("badge-ramzan");
+      else span.classList.add("badge-general");
+
+      span.textContent = cat;
+      return span;
+    }
+
+    async function loadBlockchainLog() {
+      chainBody.innerHTML = "";
+
+      try {
+        const res = await fetch("http://localhost:5000/blockchain-log");
+        const data = await res.json();
+
+        if (!Array.isArray(data) || data.length === 0) {
+          const tr = document.createElement("tr");
+          const td = document.createElement("td");
+          td.colSpan = 4;
+          td.textContent = "No on-chain records yet (simulated).";
+          tr.appendChild(td);
+          chainBody.appendChild(tr);
+          return;
+        }
+
+        data.sort((a, b) => b.txId - a.txId);
+
+        for (const tx of data) {
+          const tr = document.createElement("tr");
+
+          const idTd = document.createElement("td");
+          idTd.textContent = tx.txId;
+          tr.appendChild(idTd);
+
+          const hashTd = document.createElement("td");
+          const code = document.createElement("code");
+          code.textContent = tx.metadataHash;
+          hashTd.appendChild(code);
+          tr.appendChild(hashTd);
+
+          const netTd = document.createElement("td");
+          netTd.textContent = tx.network || "Simulated chain";
+          tr.appendChild(netTd);
+
+          const timeTd = document.createElement("td");
+          timeTd.textContent = tx.createdAt || "";
+          tr.appendChild(timeTd);
+
+          chainBody.appendChild(tr);
+        }
+      } catch (err) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 4;
+        td.textContent = "Error loading blockchain log: " + err.message;
+        tr.appendChild(td);
+        chainBody.appendChild(tr);
+      }
+    }
+
+    function renderCategoryChart(counts) {
+      const ctx = document.getElementById("categoryChart").getContext("2d");
+
+      const labels = Object.keys(counts);
+      const values = Object.values(counts);
+
+      if (!labels.length) {
+        if (categoryChart) {
+          categoryChart.destroy();
+          categoryChart = null;
+        }
+        return;
+      }
+
+      if (categoryChart) {
+        categoryChart.destroy();
+      }
+
+      categoryChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [
+            {
+              label: "Donations per category",
+              data: values,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              precision: 0,
+            },
+          },
+        },
+      });
+    }
+
+    async function loadEverything() {
+      await loadDonations();
+      await loadBlockchainLog();
+    }
+
+    refreshBtn.addEventListener("click", loadEverything);
   </script>
 </body>
 </html>
